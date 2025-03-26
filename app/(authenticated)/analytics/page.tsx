@@ -8,7 +8,7 @@ import { StudyTimeChart } from "@/components/analytics/study-time-chart"
 import { CourseEngagementChart } from "@/components/analytics/course-engagement-chart"
 
 export default async function AnalyticsPage() {
-  const supabase = await reateServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const {
     data: { session },
