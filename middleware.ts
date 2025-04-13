@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { setupCookieParsingDebug } from './lib/cookies';
+import { NextRequest, NextResponse } from 'next/server';
+import { setupSafeJsonParsing } from './lib/cookies/safe-parser';
 
 export function middleware(request: NextRequest) {
-  // This will help locate where JSON parsing is happening incorrectly
-  setupCookieParsingDebug();
+  // Setup safe JSON parsing to prevent cookie parsing errors
+  setupSafeJsonParsing();
   
+  // Continue to the next middleware or page
   return NextResponse.next();
 }
 
-// Only run middleware on the client-side pages where the issue occurs
+// Apply this middleware to all routes
 export const config = {
-  matcher: ['/login', '/dashboard/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
 

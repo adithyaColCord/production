@@ -39,6 +39,8 @@ export function AuthForm() {
         throw error
       }
 
+      // After successful sign in, redirect to dashboard
+      // The auth cookie setting is handled by Supabase
       router.push("/dashboard")
       router.refresh()
     } catch (error: any) {

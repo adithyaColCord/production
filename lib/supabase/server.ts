@@ -1,31 +1,41 @@
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+'use server';
 
-// Helper function to safely access cookie store
-const getCookieStore = async () => {
-  return await cookies()
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+// Helper to safely parse cookie values
+function safeGetCookieValue(cookieStore: ReturnType<typeof cookies>, name: string) {
+  try {
+    return cookieStore.get(name)?.value;
+  } catch (error) {
+    console.error(`Error getting cookie ${name}:`, error);
+    return undefined;
+  }
 }
 
 export async function createServerSupabaseClient() {
+  // For Next.js app router - must wait for cookies()
+  const cookieStore = await cookies();
+  
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookieStore = await getCookieStore()
-          return cookieStore.get(name)?.value
+        get(name) {
+          // Use a safe method to get cookie values
+          return safeGetCookieValue(cookieStore, name);
         },
-        async set(name: string, value: string, options: any) {
-          const cookieStore = await getCookieStore()
-          cookieStore.set({ name, value, ...options })
+        set(name, value, options) {
+          // Log instead of trying to modify cookies
+          console.log(`[Cookie set attempted]: ${name}`);
         },
-        async remove(name: string, options: any) {
-          const cookieStore = await getCookieStore()
-          cookieStore.set({ name, value: "", expires: new Date(0), ...options })
-        },
-      },
+        remove(name, options) {
+          // Log instead of trying to modify cookies
+          console.log(`[Cookie remove attempted]: ${name}`);
+        }
+      }
     }
-  )
+  );
 }
 

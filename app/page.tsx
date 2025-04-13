@@ -6,18 +6,20 @@ export default async function RootPage() {
     // Initialize the Supabase client
     const supabase = await createServerSupabaseClient()
     
-    // Use safe destructuring to avoid the "cannot read properties of undefined" error
+    // Use safe destructuring to avoid errors
     const { data } = await supabase.auth.getSession()
-    const session = data?.session
-
-    if (session) {
+    
+    // Redirect based on authentication status
+    if (data?.session) {
+      // User is logged in, redirect to dashboard
       redirect("/dashboard")
+    } else {
+      // User is not logged in, redirect to auth page
+      redirect("/login")
     }
-
-    // If no session, redirect to login
-    redirect("/login")
   } catch (error) {
     console.error("Authentication error:", error)
+    // If there's an error, safely redirect to login
     redirect("/login")
   }
 }
