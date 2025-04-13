@@ -15,7 +15,7 @@ function safeGetCookieValue(cookieStore: ReturnType<typeof cookies>, name: strin
 
 export async function createServerSupabaseClient() {
   // For Next.js app router - must wait for cookies()
-  const cookieStore = await cookies();
+  const cookieStore = await cookies().then(store => store);
   
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

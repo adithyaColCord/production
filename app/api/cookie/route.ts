@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { ResponseCookies } from 'next/dist/compiled/@edge-runtime/cookies';
 
 export async function GET(request: NextRequest) {
   const cookieName = request.nextUrl.searchParams.get('name');
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Cookie name is required' }, { status: 400 });
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const value = cookieStore.get(cookieName)?.value;
   
   return NextResponse.json({ value });
@@ -22,12 +23,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cookie name and value are required' }, { status: 400 });
     }
 
-    const cookieStore = cookies();
-    
+    const cookieStore = await cookies();
     // Set the cookie with the provided options
-    cookieStore.set({
-      name,
-      value,
+    cookieStore.set(name, value, {
       path: options.path || '/',
       ...options
     });
@@ -48,17 +46,14 @@ export async function DELETE(request: NextRequest) {
     }
     
     const cookieStore = cookies();
+    const responseCookies = cookieStore as unknown as ResponseCookies;
     
     // Delete the cookie
-    cookieStore.set({
-      name,
-      value: '',
+    responseCookies.set(name, '', {
       path: options.path || '/',
       ...options,
       expires: new Date(0)
     });
-    
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting cookie:', error);
     return NextResponse.json({ error: 'Failed to delete cookie' }, { status: 500 });
