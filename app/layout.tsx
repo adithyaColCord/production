@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { setupCookieParsingDebug } from '../lib/cookies';
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -17,6 +18,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  if (typeof window !== 'undefined') {
+    setupCookieParsingDebug();
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>

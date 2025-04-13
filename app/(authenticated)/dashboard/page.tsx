@@ -164,67 +164,89 @@ async function getParentDashboardData(userId: string) {
 }
 
 export default async function DashboardPage() {
-  const supabase = createServerSupabaseClient()
+  try {
+    const supabase = await createServerSupabaseClient()
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session) {
-    return null
+    if (!user) {
+      return <div>Not authenticated</div>
+    }
+
+    let userDetails = null
+    try {
+      const availableModels = Object.keys(prisma).filter(key => 
+        typeof prisma[key] === 'object' && 
+        prisma[key] !== null &&
+        typeof prisma[key].findUnique === 'function'
+      )
+      
+      console.log("Available Prisma models:", availableModels)
+      
+      if (prisma.user && typeof prisma.user.findUnique === 'function') {
+        userDetails = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            id: true,
+            role: true,
+          },
+        })
+      } else {
+        console.warn("No valid user model found in Prisma client")
+        console.warn("Please check your schema.prisma file for the correct model name")
+      }
+    } catch (prismaError) {
+      console.error("Prisma query error:", prismaError)
+    }
+
+    if (!userDetails) {
+      return <div>User details unavailable</div>
+    }
+
+    let dashboardData: any = {}
+
+    if (userDetails.role === "student") {
+      dashboardData = await getStudentDashboardData(userDetails.id)
+    } else if (userDetails.role === "teacher") {
+      dashboardData = await getTeacherDashboardData(userDetails.id)
+    } else if (userDetails.role === "parent") {
+      dashboardData = await getParentDashboardData(userDetails.id)
+    }
+
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p>Welcome, {user.email}</p>
+
+        {userDetails.role === "student" && (
+          <Suspense fallback={<DashboardSkeleton />}>
+            <StudentDashboard data={dashboardData} />
+          </Suspense>
+        )}
+
+        {userDetails.role === "teacher" && (
+          <Suspense fallback={<DashboardSkeleton />}>
+            <TeacherDashboard data={dashboardData} />
+          </Suspense>
+        )}
+
+        {userDetails.role === "parent" && (
+          <Suspense fallback={<DashboardSkeleton />}>
+            <ParentDashboard data={dashboardData} />
+          </Suspense>
+        )}
+
+        {userDetails.role === "admin" && (
+          <Suspense fallback={<DashboardSkeleton />}>
+            <AdminDashboard />
+          </Suspense>
+        )}
+      </div>
+    )
+  } catch (error) {
+    console.error("Dashboard error:", error)
+    return <div>Error loading dashboard. Please try refreshing.</div>
   }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      role: true,
-    },
-  })
-
-  if (!user) {
-    return null
-  }
-
-  let dashboardData: any = {}
-
-  if (user.role === "student") {
-    dashboardData = await getStudentDashboardData(user.id)
-  } else if (user.role === "teacher") {
-    dashboardData = await getTeacherDashboardData(user.id)
-  } else if (user.role === "parent") {
-    dashboardData = await getParentDashboardData(user.id)
-  }
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-
-      {user.role === "student" && (
-        <Suspense fallback={<DashboardSkeleton />}>
-          <StudentDashboard data={dashboardData} />
-        </Suspense>
-      )}
-
-      {user.role === "teacher" && (
-        <Suspense fallback={<DashboardSkeleton />}>
-          <TeacherDashboard data={dashboardData} />
-        </Suspense>
-      )}
-
-      {user.role === "parent" && (
-        <Suspense fallback={<DashboardSkeleton />}>
-          <ParentDashboard data={dashboardData} />
-        </Suspense>
-      )}
-
-      {user.role === "admin" && (
-        <Suspense fallback={<DashboardSkeleton />}>
-          <AdminDashboard />
-        </Suspense>
-      )}
-    </div>
-  )
 }
 
 function StudentDashboard({ data }: { data: any }) {

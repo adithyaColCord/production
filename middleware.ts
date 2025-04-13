@@ -1,43 +1,16 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { setupCookieParsingDebug } from './lib/cookies';
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  // If the user is not signed in and the route is protected, redirect to login
-  if (!session && !req.nextUrl.pathname.startsWith("/login")) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = "/login"
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // If the user is signed in and trying to access login page, redirect to dashboard
-  if (session && req.nextUrl.pathname.startsWith("/login")) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = "/dashboard"
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  return res
+export function middleware(request: NextRequest) {
+  // This will help locate where JSON parsing is happening incorrectly
+  setupCookieParsingDebug();
+  
+  return NextResponse.next();
 }
 
+// Only run middleware on the client-side pages where the issue occurs
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     * - api (API routes)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|public|api).*)",
-  ],
-}
+  matcher: ['/login', '/dashboard/:path*'],
+};
 
