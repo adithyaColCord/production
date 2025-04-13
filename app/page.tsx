@@ -2,15 +2,22 @@ import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 
 export default async function RootPage() {
-  const supabase = createServerSupabaseClient()
+  try {
+    // Initialize the Supabase client
+    const supabase = await createServerSupabaseClient()
+    
+    // Use safe destructuring to avoid the "cannot read properties of undefined" error
+    const { data } = await supabase.auth.getSession()
+    const session = data?.session
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    if (session) {
+      redirect("/dashboard")
+    }
 
-  if (session) {
-    redirect("/dashboard")
-  } else {
+    // If no session, redirect to login
+    redirect("/login")
+  } catch (error) {
+    console.error("Authentication error:", error)
     redirect("/login")
   }
 }

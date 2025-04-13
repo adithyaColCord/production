@@ -70,7 +70,8 @@ async function getTeacherDashboardData(userId: string) {
     where: { teacherId: userId },
   })
 
-  const totalStudents = await prisma.studentCourse.count({
+  // Fix distinct count query
+  const totalStudents = (await prisma.studentCourse.findMany({
     where: {
       course: {
         teachers: {
@@ -79,7 +80,8 @@ async function getTeacherDashboardData(userId: string) {
       },
     },
     distinct: ["studentId"],
-  })
+    select: { studentId: true },
+  })).length
 
   const upcomingClasses = await prisma.attendanceSession.findMany({
     where: {
@@ -175,10 +177,10 @@ export default async function DashboardPage() {
 
     let userDetails = null
     try {
-      const availableModels = Object.keys(prisma).filter(key => 
-        typeof prisma[key] === 'object' && 
-        prisma[key] !== null &&
-        typeof prisma[key].findUnique === 'function'
+      const availableModels = Object.keys(prisma).filter((key) => 
+        typeof prisma[key as keyof typeof prisma] === 'object' && 
+        prisma[key as keyof typeof prisma] !== null &&
+        typeof (prisma[key as keyof typeof prisma] as any).findUnique === 'function'
       )
       
       console.log("Available Prisma models:", availableModels)
