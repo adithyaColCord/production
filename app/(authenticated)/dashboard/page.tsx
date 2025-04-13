@@ -70,7 +70,6 @@ async function getTeacherDashboardData(userId: string) {
     where: { teacherId: userId },
   })
 
-  // Fix distinct count query
   const totalStudents = (await prisma.studentCourse.findMany({
     where: {
       course: {
@@ -175,34 +174,68 @@ export default async function DashboardPage() {
       return <div>Not authenticated</div>
     }
 
-    let userDetails = null
+    console.log("Supabase user ID:", user.id);
+    
+    // Attempt to find or create user in database
+    let userDetails = null;
     try {
-      const availableModels = Object.keys(prisma).filter((key) => 
-        typeof prisma[key as keyof typeof prisma] === 'object' && 
-        prisma[key as keyof typeof prisma] !== null &&
-        typeof (prisma[key as keyof typeof prisma] as any).findUnique === 'function'
-      )
+      // Try to find the user first
+      userDetails = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      });
       
-      console.log("Available Prisma models:", availableModels)
-      
-      if (prisma.user && typeof prisma.user.findUnique === 'function') {
-        userDetails = await prisma.user.findUnique({
-          where: { id: user.id },
+      // If user doesn't exist in the database but is authenticated with Supabase,
+      // create a new user record automatically
+      if (!userDetails) {
+        console.log("Creating new user record for:", user.email);
+        
+        // Extract user metadata from Supabase if available
+        const firstName = user.user_metadata?.first_name || user.user_metadata?.firstName || 'New';
+        const lastName = user.user_metadata?.last_name || user.user_metadata?.lastName || 'User';
+        const role = user.user_metadata?.role || 'student';
+        
+        // Create a new user record
+        userDetails = await prisma.user.create({
+          data: {
+            id: user.id,
+            email: user.email || '',
+            password: '', // Leave empty as auth is handled by Supabase
+            firstName,
+            lastName,
+            role: role as "student" | "teacher" | "parent" | "admin",
+          },
           select: {
             id: true,
             role: true,
-          },
-        })
-      } else {
-        console.warn("No valid user model found in Prisma client")
-        console.warn("Please check your schema.prisma file for the correct model name")
+            firstName: true,
+            lastName: true,
+            email: true,
+          }
+        });
+        
+        console.log("User created successfully:", userDetails);
       }
     } catch (prismaError) {
-      console.error("Prisma query error:", prismaError)
+      console.error("Prisma operation error:", prismaError);
     }
 
     if (!userDetails) {
-      return <div>User details unavailable</div>
+      return (
+        <div className="p-6">
+          <h1 className="text-3xl font-bold mb-6">User Creation Failed</h1>
+          <p className="mb-4">We couldn't create your user record in the database. Please contact support.</p>
+          <p>Error details: Unable to sync Supabase user with database</p>
+          <p>Supabase ID: {user.id}</p>
+          <p>Email: {user.email}</p>
+        </div>
+      );
     }
 
     let dashboardData: any = {}
