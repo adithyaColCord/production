@@ -5,15 +5,12 @@ import { usePathname } from "next/navigation"
 import {
   BookOpen,
   ClipboardList,
-  FileText,
   LayoutDashboard,
   MessageSquare,
   Settings,
-  Users,
   BarChart,
   BellRing,
-  BookMarked,
-  Search,
+  Locate,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -85,10 +82,10 @@ export function SidebarNav({ user }: SidebarNavProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/chat")}>
-                <Link href="/chat">
+              <SidebarMenuButton asChild isActive={isActive("/study-assistant")}>
+                <Link href="/study-assistant">
                   <MessageSquare className="h-4 w-4" />
-                  <span>Chat</span>
+                  <span>mood assistant</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -97,14 +94,6 @@ export function SidebarNav({ user }: SidebarNavProps) {
                 <Link href="/attendance">
                   <ClipboardList className="h-4 w-4" />
                   <span>Attendance</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/tasks")}>
-                <Link href="/tasks">
-                  <FileText className="h-4 w-4" />
-                  <span>Tasks</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -125,50 +114,10 @@ export function SidebarNav({ user }: SidebarNavProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/study-assistant")}>
-                <Link href="/study-assistant">
-                  <BookMarked className="h-4 w-4" />
-                  <span>Study Assistant</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/collaborative-docs")}>
-                <Link href="/collaborative-docs">
-                  <FileText className="h-4 w-4" />
-                  <span>Collaborative Docs</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/study-rooms")}>
-                <Link href="/study-rooms">
-                  <Users className="h-4 w-4" />
-                  <span>Study Rooms</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/plagiarism-checker")}>
-                <Link href="/plagiarism-checker">
-                  <Search className="h-4 w-4" />
-                  <span>Plagiarism Checker</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/resource-library")}>
-                <Link href="/resource-library">
-                  <BookOpen className="h-4 w-4" />
-                  <span>Resource Library</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/peer-tutoring")}>
-                <Link href="/peer-tutoring">
-                  <Users className="h-4 w-4" />
-                  <span>Peer Tutoring</span>
+              <SidebarMenuButton asChild isActive={isActive("/furlong")}>
+                <Link href="/furlong">
+                  <Locate className="h-4 w-4" />
+                  <span>Furlong</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

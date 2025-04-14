@@ -6,7 +6,7 @@ import { MoodAssistant } from "@/components/study-assistant/mood-assistant"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default async function StudyAssistantPage() {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const {
     data: { session },

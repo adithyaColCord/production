@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     const {
       data: { session },

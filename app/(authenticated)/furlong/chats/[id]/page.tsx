@@ -9,7 +9,7 @@ export default async function FurlongChatPage({
 }: {
   params: { id: string }
 }) {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const {
     data: { session },

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     const {
       data: { session },

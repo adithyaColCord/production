@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { NotificationsList } from "@/components/notifications/notifications-list"
 
 export default async function NotificationsPage() {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const {
     data: { session },

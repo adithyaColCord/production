@@ -8,7 +8,7 @@ import { SecuritySettings } from "@/components/settings/security-settings"
 import { AppearanceSettings } from "@/components/settings/appearance-settings"
 
 export default async function SettingsPage() {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const {
     data: { session },

@@ -1,374 +1,322 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("POSTGRES_PRISMA_URL")
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-enum UserRole {
-  student
-  teacher
-  parent
-  admin
-}
-
 model User {
-  id            String    @id @default(uuid()) @db.Uuid
-  email         String    @unique
-  password      String
-  firstName     String    @map("first_name")
-  lastName      String    @map("last_name")
-  role          UserRole
-  avatarUrl     String?   @map("avatar_url")
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  // Relations
-  teacherCourses      TeacherCourse[]
-  studentCourses      StudentCourse[]
-  parentStudents      ParentStudent[]  @relation("ParentToStudent")
-  studentParents      ParentStudent[]  @relation("StudentToParent")
-  attendanceSessions  AttendanceSession[]
-  attendanceRecords   AttendanceRecord[]
-  studentAssignments  StudentAssignment[]
-  studentExams        StudentExam[]
-  notifications       Notification[]
-  clubMemberships     ClubMember[]
-  createdEvents       CalendarEvent[]
-  furlongNotes        FurlongNote[]
-  furlongChatMembers  FurlongChatMember[]
-  furlongMessages     FurlongMessage[]
-  studySessions       StudySession[]
-  achievements        StudentAchievement[]
+  id                 String               @id @default(uuid()) @db.Uuid
+  email              String               @unique
+  password           String
+  firstName          String               @map("first_name")
+  lastName           String               @map("last_name")
+  role               UserRole
+  avatarUrl          String?              @map("avatar_url")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+  attendanceRecords  AttendanceRecord[]
+  attendanceSessions AttendanceSession[]
+  createdEvents      CalendarEvent[]
+  clubMemberships    ClubMember[]
+  furlongChatMembers FurlongChatMember[]
+  furlongMessages    FurlongMessage[]
+  furlongNotes       FurlongNote[]
+  notifications      Notification[]
+  parentStudents     ParentStudent[]      @relation("ParentToStudent")
+  studentParents     ParentStudent[]      @relation("StudentToParent")
+  achievements       StudentAchievement[]
+  studentAssignments StudentAssignment[]
+  studentCourses     StudentCourse[]
+  studentExams       StudentExam[]
+  studySessions      StudySession[]
+  teacherCourses     TeacherCourse[]
 
   @@map("users")
 }
 
 model Department {
-  id        String    @id @default(uuid()) @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
   name      String
-  code      String    @unique
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
   courses   Course[]
 
   @@map("departments")
 }
 
 model Course {
-  id            String    @id @default(uuid()) @db.Uuid
-  code          String    @unique
-  name          String
-  description   String?
-  departmentId  String    @map("department_id") @db.Uuid
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  department        Department        @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  teachers          TeacherCourse[]
-  students          StudentCourse[]
-  materials         CourseMaterial[]
+  id                 String              @id @default(uuid()) @db.Uuid
+  code               String              @unique
+  name               String
+  description        String?
+  departmentId       String              @map("department_id") @db.Uuid
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+  assignments        Assignment[]
   attendanceSessions AttendanceSession[]
-  assignments       Assignment[]
-  exams             Exam[]
-  studySessions     StudySession[]
+  materials          CourseMaterial[]
+  department         Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  exams              Exam[]
+  students           StudentCourse[]
+  studySessions      StudySession[]
+  teachers           TeacherCourse[]
 
   @@map("courses")
 }
 
 model TeacherCourse {
-  id        String    @id @default(uuid()) @db.Uuid
-  teacherId String    @map("teacher_id") @db.Uuid
-  courseId  String    @map("course_id") @db.Uuid
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  teacher   User      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid()) @db.Uuid
+  teacherId String   @map("teacher_id") @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, courseId])
   @@map("teacher_courses")
 }
 
 model StudentCourse {
-  id        String    @id @default(uuid()) @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
-  courseId  String    @map("course_id") @db.Uuid
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, courseId])
   @@map("student_courses")
 }
 
 model ParentStudent {
-  id        String    @id @default(uuid()) @db.Uuid
-  parentId  String    @map("parent_id") @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  parent    User      @relation("ParentToStudent", fields: [parentId], references: [id], onDelete: Cascade)
-  student   User      @relation("StudentToParent", fields: [studentId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String   @map("parent_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  parent    User     @relation("ParentToStudent", fields: [parentId], references: [id], onDelete: Cascade)
+  student   User     @relation("StudentToParent", fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([parentId, studentId])
   @@map("parent_students")
 }
 
 model CourseMaterial {
-  id          String    @id @default(uuid()) @db.Uuid
-  courseId    String    @map("course_id") @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
+  courseId    String   @map("course_id") @db.Uuid
   title       String
   description String?
-  fileUrl     String?   @map("file_url")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  fileUrl     String?  @map("file_url")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_materials")
 }
 
 model AttendanceSession {
-  id          String    @id @default(uuid()) @db.Uuid
-  courseId    String    @map("course_id") @db.Uuid
-  teacherId   String    @map("teacher_id") @db.Uuid
-  qrCode      String    @map("qr_code")
-  sessionDate DateTime  @map("session_date") @db.Date
-  startTime   DateTime  @map("start_time") @db.Time
-  endTime     DateTime  @map("end_time") @db.Time
+  id          String             @id @default(uuid()) @db.Uuid
+  courseId    String             @map("course_id") @db.Uuid
+  teacherId   String             @map("teacher_id") @db.Uuid
+  qrCode      String             @map("qr_code")
+  sessionDate DateTime           @map("session_date") @db.Date
+  startTime   DateTime           @map("start_time") @db.Time(6)
+  endTime     DateTime           @map("end_time") @db.Time(6)
   latitude    Float?
   longitude   Float?
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teacher     User      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
   records     AttendanceRecord[]
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher     User               @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@map("attendance_sessions")
 }
 
 model AttendanceRecord {
-  id          String    @id @default(uuid()) @db.Uuid
-  sessionId   String    @map("session_id") @db.Uuid
-  studentId   String    @map("student_id") @db.Uuid
+  id          String            @id @default(uuid()) @db.Uuid
+  sessionId   String            @map("session_id") @db.Uuid
+  studentId   String            @map("student_id") @db.Uuid
   status      String
-  checkInTime DateTime?  @map("check_in_time") @db.Timestamptz
+  checkInTime DateTime?         @map("check_in_time") @db.Timestamptz(6)
   latitude    Float?
   longitude   Float?
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
   session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student     User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
   @@map("attendance_records")
 }
 
 model Assignment {
-  id          String    @id @default(uuid()) @db.Uuid
-  courseId    String    @map("course_id") @db.Uuid
-  title       String
-  description String?
-  dueDate     DateTime  @map("due_date") @db.Timestamptz
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id                 String              @id @default(uuid()) @db.Uuid
+  courseId           String              @map("course_id") @db.Uuid
+  title              String
+  description        String?
+  dueDate            DateTime            @map("due_date") @db.Timestamptz(6)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+  course             Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
   studentAssignments StudentAssignment[]
 
   @@map("assignments")
 }
 
 model StudentAssignment {
-  id            String    @id @default(uuid()) @db.Uuid
-  assignmentId  String    @map("assignment_id") @db.Uuid
-  studentId     String    @map("student_id") @db.Uuid
-  submissionUrl String?   @map("submission_url")
-  submittedAt   DateTime? @map("submitted_at") @db.Timestamptz
+  id            String     @id @default(uuid()) @db.Uuid
+  assignmentId  String     @map("assignment_id") @db.Uuid
+  studentId     String     @map("student_id") @db.Uuid
+  submissionUrl String?    @map("submission_url")
+  submittedAt   DateTime?  @map("submitted_at") @db.Timestamptz(6)
   grade         Float?
   feedback      String?
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
   assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  student       User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student       User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([assignmentId, studentId])
   @@map("student_assignments")
 }
 
 model Exam {
-  id          String    @id @default(uuid()) @db.Uuid
-  courseId    String    @map("course_id") @db.Uuid
-  title       String
-  description String?
-  examDate    DateTime  @map("exam_date") @db.Timestamptz
-  duration    Int       // in minutes
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id           String        @id @default(uuid()) @db.Uuid
+  courseId     String        @map("course_id") @db.Uuid
+  title        String
+  description  String?
+  examDate     DateTime      @map("exam_date") @db.Timestamptz(6)
+  duration     Int
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   studentExams StudentExam[]
 
   @@map("exams")
 }
 
 model StudentExam {
-  id        String    @id @default(uuid()) @db.Uuid
-  examId    String    @map("exam_id") @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
+  examId    String   @map("exam_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
   grade     Float?
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  exam      Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([examId, studentId])
   @@map("student_exams")
 }
 
 model Notification {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   title     String
   message   String
   type      String
-  relatedId String?   @map("related_id") @db.Uuid
-  isRead    Boolean   @default(false) @map("is_read")
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedId String?  @map("related_id") @db.Uuid
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
 model Club {
-  id          String    @id @default(uuid()) @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
   name        String
   description String?
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
   members     ClubMember[]
 
   @@map("clubs")
 }
 
 model ClubMember {
-  id        String    @id @default(uuid()) @db.Uuid
-  clubId    String    @map("club_id") @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
+  clubId    String   @map("club_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
   role      String
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  club      Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([clubId, studentId])
   @@map("club_members")
 }
 
 model CalendarEvent {
-  id          String    @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
   title       String
   description String?
-  startTime   DateTime  @map("start_time") @db.Timestamptz
-  endTime     DateTime  @map("end_time") @db.Timestamptz
+  startTime   DateTime @map("start_time") @db.Timestamptz(6)
+  endTime     DateTime @map("end_time") @db.Timestamptz(6)
   location    String?
-  eventType   String    @map("event_type")
-  relatedId   String?   @map("related_id") @db.Uuid
-  createdBy   String?   @map("created_by") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
-  creator     User?     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  eventType   String   @map("event_type")
+  relatedId   String?  @map("related_id") @db.Uuid
+  createdBy   String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  creator     User?    @relation(fields: [createdBy], references: [id])
 
   @@map("calendar_events")
 }
 
 model FurlongNote {
-  id        String    @id @default(uuid()) @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
+  id        String        @id @default(uuid()) @db.Uuid
+  studentId String        @map("student_id") @db.Uuid
   message   String
   interests String[]
   latitude  Float
   longitude Float
   radius    Float
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  expiresAt DateTime      @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   chats     FurlongChat[]
+  student   User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("furlong_notes")
 }
 
 model FurlongChat {
-  id            String    @id @default(uuid()) @db.Uuid
-  furlongNoteId String    @map("furlong_note_id") @db.Uuid
-  expiresAt     DateTime  @map("expires_at") @db.Timestamptz
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  furlongNote   FurlongNote @relation(fields: [furlongNoteId], references: [id], onDelete: Cascade)
+  id            String              @id @default(uuid()) @db.Uuid
+  furlongNoteId String              @map("furlong_note_id") @db.Uuid
+  expiresAt     DateTime            @map("expires_at") @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   members       FurlongChatMember[]
+  furlongNote   FurlongNote         @relation(fields: [furlongNoteId], references: [id], onDelete: Cascade)
   messages      FurlongMessage[]
 
   @@map("furlong_chats")
 }
 
 model FurlongChatMember {
-  id        String    @id @default(uuid()) @db.Uuid
-  chatId    String    @map("chat_id") @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
+  id        String      @id @default(uuid()) @db.Uuid
+  chatId    String      @map("chat_id") @db.Uuid
+  studentId String      @map("student_id") @db.Uuid
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   chat      FurlongChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([chatId, studentId])
   @@map("furlong_chat_members")
 }
 
 model FurlongMessage {
-  id        String    @id @default(uuid()) @db.Uuid
-  chatId    String    @map("chat_id") @db.Uuid
-  studentId String    @map("student_id") @db.Uuid
+  id        String      @id @default(uuid()) @db.Uuid
+  chatId    String      @map("chat_id") @db.Uuid
+  studentId String      @map("student_id") @db.Uuid
   message   String
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   chat      FurlongChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("furlong_messages")
 }
@@ -377,43 +325,43 @@ model StudySession {
   id        String    @id @default(uuid()) @db.Uuid
   studentId String    @map("student_id") @db.Uuid
   courseId  String?   @map("course_id") @db.Uuid
-  startTime DateTime  @map("start_time") @db.Timestamptz
-  endTime   DateTime? @map("end_time") @db.Timestamptz
-  duration  Int?      // in minutes
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-  
-  // Relations
+  startTime DateTime  @map("start_time") @db.Timestamptz(6)
+  endTime   DateTime? @map("end_time") @db.Timestamptz(6)
+  duration  Int?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  course    Course?   @relation(fields: [courseId], references: [id])
   student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course    Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@map("study_sessions")
 }
 
 model Achievement {
-  id          String    @id @default(uuid()) @db.Uuid
+  id          String               @id @default(uuid()) @db.Uuid
   name        String
   description String
-  iconUrl     String?   @map("icon_url")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
+  iconUrl     String?              @map("icon_url")
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   students    StudentAchievement[]
 
   @@map("achievements")
 }
 
 model StudentAchievement {
-  id            String    @id @default(uuid()) @db.Uuid
-  studentId     String    @map("student_id") @db.Uuid
-  achievementId String    @map("achievement_id") @db.Uuid
-  achievedAt    DateTime  @default(now()) @map("achieved_at") @db.Timestamptz
-  
-  // Relations
-  student       User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id            String      @id @default(uuid()) @db.Uuid
+  studentId     String      @map("student_id") @db.Uuid
+  achievementId String      @map("achievement_id") @db.Uuid
+  achievedAt    DateTime    @default(now()) @map("achieved_at") @db.Timestamptz(6)
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  student       User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, achievementId])
   @@map("student_achievements")
 }
 
+enum UserRole {
+  student
+  teacher
+  parent
+  admin
+}
