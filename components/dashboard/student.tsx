@@ -25,7 +25,7 @@ interface StudentDashboardProps {
 
 export function StudentDashboard({ data }: StudentDashboardProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 flex h-screen w-full">
       <h2 className="text-2xl font-bold">Student Dashboard</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="p-4 bg-white shadow rounded">

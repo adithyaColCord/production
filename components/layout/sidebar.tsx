@@ -45,7 +45,10 @@ export function SidebarNav({ user }: SidebarNavProps) {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
 
-  const getInitials = (firstName: string, lastName: string) => {
+  const getInitials = (firstName?: string | null, lastName?: string | null) => {
+    if (!firstName || !lastName) {
+      return "";
+    }
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
   }
 
@@ -121,7 +124,7 @@ export function SidebarNav({ user }: SidebarNavProps) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {user.role === "admin" && (
+            {/* {user.role === "admin" && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/admin")}>
                   <Link href="/admin">
@@ -130,18 +133,18 @@ export function SidebarNav({ user }: SidebarNavProps) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )}
+            )} */}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
           <div className="flex items-center gap-2">
             <Avatar>
-              <AvatarImage src={user.avatarUrl || undefined} alt={`${user.firstName} ${user.lastName}`} />
-              <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+              <AvatarImage src={user?.avatarUrl || undefined} alt={`${user?.firstName} ${user?.lastName}`} />
+              <AvatarFallback>{getInitials(user?.firstName, user?.lastName)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <span className="text-sm font-medium">{`${user.firstName} ${user.lastName}`}</span>
-              <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+              <span className="text-sm font-medium">{`${user?.firstName} ${user?.lastName}`}</span>
+              <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
             </div>
             <Button variant="ghost" size="icon" asChild className="ml-auto">
               <Link href="/settings">

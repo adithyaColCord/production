@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { Bot, Send, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Message {
   id: string
@@ -21,33 +20,45 @@ interface Message {
 interface MoodAssistantProps {
   userId: string
   userName: string
+  initialMessages?: Message[]
 }
 
-export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
-  const [messages, setMessages] = useState<Message[]>([
+export function MoodAssistant({ 
+  userId, 
+  userName, 
+  initialMessages = [] 
+}: MoodAssistantProps) {
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: "welcome",
       role: "assistant",
       content: `Hello ${userName}! I'm your AI mood assistant. How are you feeling today?`,
       timestamp: new Date(),
     },
+    ...initialMessages,
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
 
+  // Persist messages to localStorage
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    try {
+      localStorage.setItem(`mood-assistant-${userId}`, JSON.stringify(messages))
+    } catch (error) {
+      console.error("Failed to persist messages", error)
+    }
+  }, [messages, userId])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior })
   }
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!input.trim()) return
+    
+    if (!input.trim() || isLoading) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -56,16 +67,20 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    setMessages(prev => [...prev, userMessage])
     setInput("")
     setIsLoading(true)
 
     try {
       const { text } = await generateText({
-        model: openai("gpt-4o"),
-        prompt: `You are a helpful and motivational AI assistant for a student named ${userName}. Your goal is to help them with their mood, motivation, and academic stress. Be empathetic, positive, and provide practical advice. Previous conversation: ${JSON.stringify(messages.slice(-5))}. User's message: ${input}`,
+        model: openai.chat("gpt-3.5-turbo"), // Using reliable model
+        prompt: `You are a helpful and motivational AI assistant for a student named ${userName}. 
+        Your goal is to help them with their mood, motivation, and academic stress. 
+        Be empathetic, positive, and provide practical advice. 
+        Previous conversation: ${JSON.stringify(messages.slice(-5))}. 
+        User's message: ${input}`,
         system:
-          "You are a supportive AI mood assistant for students. Your responses should be concise (under 150 words), empathetic, and motivational. Focus on helping students manage stress, stay motivated, and maintain a positive mindset. Provide practical advice when appropriate.",
+          "You are a supportive AI mood assistant for students. Keep responses concise (under 150 words), empathetic, and motivational. Focus on stress management, motivation, and positive mindset. Provide practical advice when appropriate.",
       })
 
       const assistantMessage: Message = {
@@ -75,20 +90,26 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
         timestamp: new Date(),
       }
 
-      setMessages((prev) => [...prev, assistantMessage])
+      setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error("Error generating response:", error)
+      toast({
+        title: "Connection Error",
+        description: "Failed to get response from assistant",
+        variant: "destructive",
+      })
 
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: "I'm sorry, I'm having trouble responding right now. Please try again later.",
+        content: "I'm having trouble responding right now. Please try again in a moment.",
         timestamp: new Date(),
       }
 
-      setMessages((prev) => [...prev, errorMessage])
+      setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
+      setTimeout(() => scrollToBottom("auto"), 100)
     }
   }
 
@@ -97,15 +118,21 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div 
+              key={message.id} 
+              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              aria-live={message.role === "assistant" ? "polite" : "off"}
+            >
               <div
                 className={`flex max-w-[80%] items-start gap-3 rounded-lg p-3 ${
-                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                  message.role === "user" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted"
                 }`}
               >
                 {message.role === "assistant" && (
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>
+                    <AvatarFallback aria-label="AI Assistant">
                       <Bot className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
@@ -121,7 +148,7 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
                 </div>
                 {message.role === "user" && (
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>
+                    <AvatarFallback aria-label={userName}>
                       <User className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
@@ -129,7 +156,7 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
               </div>
             </div>
           ))}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
       </ScrollArea>
       <div className="border-t p-4">
@@ -139,8 +166,14 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
+            aria-label="Type your message to the mood assistant"
           />
-          <Button type="submit" size="icon" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={isLoading || !input.trim()}
+            aria-label="Send message"
+          >
             <Send className="h-4 w-4" />
           </Button>
         </form>
@@ -148,4 +181,3 @@ export function MoodAssistant({ userId, userName }: MoodAssistantProps) {
     </div>
   )
 }
-

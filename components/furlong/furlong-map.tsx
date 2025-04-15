@@ -5,18 +5,46 @@ import { Loader } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 
+// Declare the google object on the window interface for better type safety
+declare global {
+  interface Window {
+    google?: {
+      maps: {
+        Map: new (el: Element, options?: google.maps.MapOptions) => google.maps.Map
+        Marker: new (options?: google.maps.MarkerOptions) => google.maps.Marker
+        Circle: new (options?: google.maps.CircleOptions) => google.maps.Circle
+        InfoWindow: new (options?: google.maps.InfoWindowOptions) => google.maps.InfoWindow
+        SymbolPath: {
+          CIRCLE: string
+        }
+        LatLngLiteral: google.maps.LatLngLiteral
+        MapOptions: google.maps.MapOptions
+        MarkerOptions: google.maps.MarkerOptions
+        CircleOptions: google.maps.CircleOptions
+        InfoWindowOptions: google.maps.InfoWindowOptions
+      }
+    }
+  }
+}
+
 interface FurlongMapProps {
-  notes: any[]
+  notes: any[] // Consider a more specific type for 'notes'
   userId: string
+}
+
+interface Location {
+  lat: number
+  lng: number
 }
 
 export function FurlongMap({ notes, userId }: FurlongMapProps) {
   const [loading, setLoading] = useState(true)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [userLocation, setUserLocation] = useState<Location | null>(null)
   const mapRef = useRef<HTMLDivElement>(null)
   const googleMapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
   const { toast } = useToast()
+  const isMapLoaded = useRef(false)
 
   useEffect(() => {
     // Load Google Maps API
@@ -33,7 +61,7 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
   }, [])
 
   useEffect(() => {
-    if (googleMapRef.current && userLocation && notes.length > 0) {
+    if (isMapLoaded.current && userLocation) {
       updateMarkers()
     }
   }, [notes, userLocation])
@@ -47,12 +75,13 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords
-          setUserLocation({ lat: latitude, lng: longitude })
+          const newLocation: Location = { lat: latitude, lng: longitude }
+          setUserLocation(newLocation)
           setLoading(false)
 
-          if (mapRef.current && !googleMapRef.current) {
-            const map = new (window as any).google.maps.Map(mapRef.current, {
-              center: { lat: latitude, lng: longitude },
+          if (mapRef.current && !googleMapRef.current && window.google?.maps) {
+            const map = new window.google.maps.Map(mapRef.current, {
+              center: newLocation,
               zoom: 15,
               styles: [
                 { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -137,13 +166,14 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
             })
 
             googleMapRef.current = map
+            isMapLoaded.current = true
 
             // Add user marker
-            ;new (window as any).google.maps.Marker({
-              position: { lat: latitude, lng: longitude },
+            new window.google.maps.Marker({
+              position: newLocation,
               map,
               icon: {
-                path: (window as any).google.maps.SymbolPath.CIRCLE,
+                path: window.google.maps.SymbolPath.CIRCLE,
                 scale: 10,
                 fillColor: "#4285F4",
                 fillOpacity: 1,
@@ -177,7 +207,7 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
   }
 
   const updateMarkers = () => {
-    if (!googleMapRef.current || !userLocation) return
+    if (!googleMapRef.current || !userLocation || !window.google?.maps) return
 
     // Clear existing markers
     markersRef.current.forEach((marker) => marker.setMap(null))
@@ -187,12 +217,12 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
     notes.forEach((note) => {
       if (note.studentId === userId) return // Skip user's own notes
 
-      const marker = new (window as any).google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: note.latitude, lng: note.longitude },
         map: googleMapRef.current,
         title: `${note.student.firstName} ${note.student.lastName}`,
         icon: {
-          path: (window as any).google.maps.SymbolPath.CIRCLE,
+          path: window.google.maps.SymbolPath.CIRCLE,
           scale: 8,
           fillColor: "#FF5722",
           fillOpacity: 1,
@@ -202,7 +232,7 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
       })
 
       // Add circle to represent radius
-      ;new (window as any).google.maps.Circle({
+      new window.google.maps.Circle({
         strokeColor: "#FF5722",
         strokeOpacity: 0.8,
         strokeWeight: 1,
@@ -214,7 +244,7 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
       })
 
       // Add info window
-      const infoWindow = new (window as any).google.maps.InfoWindow({
+      const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div style="color: #000; padding: 5px;">
             <p style="font-weight: bold; margin: 0;">${note.student.firstName} ${note.student.lastName}</p>
@@ -252,4 +282,3 @@ export function FurlongMap({ notes, userId }: FurlongMapProps) {
     </div>
   )
 }
-
