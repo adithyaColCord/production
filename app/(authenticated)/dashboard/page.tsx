@@ -33,22 +33,28 @@
 //       return redirect("/login"); // Redirect to login for unknown roles
 //   }
 // }
-import { Suspense } from "react"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { prisma } from "@/lib/db"
-import { BookOpen, Clock, Star, Users } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { SidebarNav } from "@/components/layout/sidebar"
+import { Suspense } from "react";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/db";
+import { BookOpen, Clock, Star, Users } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SidebarNav } from "@/components/layout/sidebar";
 
 async function getStudentDashboardData(userId: string) {
   const enrolledCourses = await prisma.studentCourse.count({
     where: { studentId: userId },
-  })
+  });
 
   const clubs = await prisma.clubMember.count({
     where: { studentId: userId },
-  })
+  });
 
   const studyHours = await prisma.studySession.aggregate({
     where: {
@@ -56,11 +62,11 @@ async function getStudentDashboardData(userId: string) {
       endTime: { not: null },
     },
     _sum: { duration: true },
-  })
+  });
 
   const achievements = await prisma.studentAchievement.count({
     where: { studentId: userId },
-  })
+  });
 
   const recentGrades = await prisma.studentExam.findMany({
     where: { studentId: userId },
@@ -73,7 +79,7 @@ async function getStudentDashboardData(userId: string) {
         },
       },
     },
-  })
+  });
 
   const upcomingDeadlines = await prisma.assignment.findMany({
     where: {
@@ -89,7 +95,7 @@ async function getStudentDashboardData(userId: string) {
     include: {
       course: true,
     },
-  })
+  });
 
   return {
     enrolledCourses,
@@ -98,25 +104,27 @@ async function getStudentDashboardData(userId: string) {
     achievements,
     recentGrades,
     upcomingDeadlines,
-  }
+  };
 }
 
 async function getTeacherDashboardData(userId: string) {
   const teachingCourses = await prisma.teacherCourse.count({
     where: { teacherId: userId },
-  })
+  });
 
-  const totalStudents = (await prisma.studentCourse.findMany({
-    where: {
-      course: {
-        teachers: {
-          some: { teacherId: userId },
+  const totalStudents = (
+    await prisma.studentCourse.findMany({
+      where: {
+        course: {
+          teachers: {
+            some: { teacherId: userId },
+          },
         },
       },
-    },
-    distinct: ["studentId"],
-    select: { studentId: true },
-  })).length
+      distinct: ["studentId"],
+      select: { studentId: true },
+    })
+  ).length;
 
   const upcomingClasses = await prisma.attendanceSession.findMany({
     where: {
@@ -128,7 +136,7 @@ async function getTeacherDashboardData(userId: string) {
     include: {
       course: true,
     },
-  })
+  });
 
   const pendingAssignments = await prisma.assignment.count({
     where: {
@@ -144,14 +152,14 @@ async function getTeacherDashboardData(userId: string) {
         },
       },
     },
-  })
+  });
 
   return {
     teachingCourses,
     totalStudents,
     upcomingClasses,
     pendingAssignments,
-  }
+  };
 }
 
 async function getParentDashboardData(userId: string) {
@@ -195,23 +203,25 @@ async function getParentDashboardData(userId: string) {
         },
       },
     },
-  })
+  });
 
-  return { children }
+  return { children };
 }
 
 export default async function DashboardPage() {
   try {
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return <div>Not authenticated</div>
+      return <div>Not authenticated</div>;
     }
 
     console.log("Supabase user ID:", user.id);
-    
+
     // Attempt to find or create user in database
     let userDetails = null;
     try {
@@ -226,23 +236,29 @@ export default async function DashboardPage() {
           email: true,
         },
       });
-      
+
       // If user doesn't exist in the database but is authenticated with Supabase,
       // create a new user record automatically
       if (!userDetails) {
         console.log("Creating new user record for:", user.email);
-        
+
         // Extract user metadata from Supabase if available
-        const firstName = user.user_metadata?.first_name || user.user_metadata?.firstName || 'New';
-        const lastName = user.user_metadata?.last_name || user.user_metadata?.lastName || 'User';
-        const role = user.user_metadata?.role || 'student';
-        
+        const firstName =
+          user.user_metadata?.first_name ||
+          user.user_metadata?.firstName ||
+          "New";
+        const lastName =
+          user.user_metadata?.last_name ||
+          user.user_metadata?.lastName ||
+          "User";
+        const role = user.user_metadata?.role || "student";
+
         // Create a new user record
         userDetails = await prisma.user.create({
           data: {
             id: user.id,
-            email: user.email || '',
-            password: '', // Leave empty as auth is handled by Supabase
+            email: user.email || "",
+            password: "", // Leave empty as auth is handled by Supabase
             firstName,
             lastName,
             role: role as "student" | "teacher" | "parent" | "admin",
@@ -253,9 +269,9 @@ export default async function DashboardPage() {
             firstName: true,
             lastName: true,
             email: true,
-          }
+          },
         });
-        
+
         console.log("User created successfully:", userDetails);
       }
     } catch (prismaError) {
@@ -266,7 +282,10 @@ export default async function DashboardPage() {
       return (
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-6">User Creation Failed</h1>
-          <p className="mb-4">We couldn't create your user record in the database. Please contact support.</p>
+          <p className="mb-4">
+            We couldn't create your user record in the database. Please contact
+            support.
+          </p>
           <p>Error details: Unable to sync Supabase user with database</p>
           <p>Supabase ID: {user.id}</p>
           <p>Email: {user.email}</p>
@@ -274,14 +293,18 @@ export default async function DashboardPage() {
       );
     }
 
-    let dashboardData: any = {}
+    let dashboardData: any = {};
 
     if (userDetails.role === "student") {
-      dashboardData = await getStudentDashboardData(userDetails.id)
+      dashboardData = await getStudentDashboardData(userDetails.id);
+      dashboardData.user = {
+        firstName: userDetails.firstName,
+        lastName: userDetails.lastName,
+      };
     } else if (userDetails.role === "teacher") {
-      dashboardData = await getTeacherDashboardData(userDetails.id)
+      dashboardData = await getTeacherDashboardData(userDetails.id);
     } else if (userDetails.role === "parent") {
-      dashboardData = await getParentDashboardData(userDetails.id)
+      dashboardData = await getParentDashboardData(userDetails.id);
     }
 
     return (
@@ -314,14 +337,14 @@ export default async function DashboardPage() {
           </Suspense>
         )}
       </div>
-    )
+    );
   } catch (error) {
-    console.error("Dashboard error:", error)
-    return <div>Error loading dashboard. Please try refreshing.</div>
+    console.error("Dashboard error:", error);
+    return <div>Error loading dashboard. Please try refreshing.</div>;
   }
 }
 
-function StudentDashboard({ data }: {data:any}) {
+function StudentDashboard({ data }: { data: any }) {
   return (
     <div className="flex h-screen bg-gray-100">
       <SidebarNav user={data.user} />
@@ -330,38 +353,54 @@ function StudentDashboard({ data }: {data:any}) {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card className="shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-lg font-semibold tracking-tight">Enrolled Courses</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Enrolled Courses
+                </CardTitle>
                 <BookOpen className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent className="py-4">
-                <div className="text-3xl font-bold text-primary tracking-wider">{data.enrolledCourses}</div>
+                <div className="text-3xl font-bold text-primary tracking-wider">
+                  {data.enrolledCourses}
+                </div>
               </CardContent>
             </Card>
             <Card className="shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-lg font-semibold tracking-tight">Study Groups</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Study Groups
+                </CardTitle>
                 <Users className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent className="py-4">
-                <div className="text-3xl font-bold text-primary tracking-wider">{data.clubs}</div>
+                <div className="text-3xl font-bold text-primary tracking-wider">
+                  {data.clubs}
+                </div>
               </CardContent>
             </Card>
             <Card className="shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-lg font-semibold tracking-tight">Study Hours</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Study Hours
+                </CardTitle>
                 <Clock className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent className="py-4">
-                <div className="text-3xl font-bold text-primary tracking-wider">{data.studyHours}</div>
+                <div className="text-3xl font-bold text-primary tracking-wider">
+                  {data.studyHours}
+                </div>
               </CardContent>
             </Card>
             <Card className="shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-lg font-semibold tracking-tight">Achievements</CardTitle>
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Achievements
+                </CardTitle>
                 <Star className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent className="py-4">
-                <div className="text-3xl font-bold text-primary tracking-wider">{data.achievements}</div>
+                <div className="text-3xl font-bold text-primary tracking-wider">
+                  {data.achievements}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -369,8 +408,12 @@ function StudentDashboard({ data }: {data:any}) {
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="col-span-1 shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl font-semibold tracking-tight">Academic Performance</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">Your recent grades and performance</CardDescription>
+                <CardTitle className="text-xl font-semibold tracking-tight">
+                  Academic Performance
+                </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Your recent grades and performance
+                </CardDescription>
               </CardHeader>
               <CardContent className="py-4">
                 <div className="h-[350px] w-full rounded-md bg-muted/30 flex items-center justify-center text-muted-foreground italic">
@@ -380,8 +423,12 @@ function StudentDashboard({ data }: {data:any}) {
             </Card>
             <Card className="col-span-1 shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl font-semibold tracking-tight">Study Patterns</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">Your study time distribution</CardDescription>
+                <CardTitle className="text-xl font-semibold tracking-tight">
+                  Study Patterns
+                </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Your study time distribution
+                </CardDescription>
               </CardHeader>
               <CardContent className="py-4">
                 <div className="h-[350px] w-full rounded-md bg-muted/30 flex items-center justify-center text-muted-foreground italic">
@@ -394,7 +441,9 @@ function StudentDashboard({ data }: {data:any}) {
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="col-span-1 shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl font-semibold tracking-tight">Resource Utilization</CardTitle>
+                <CardTitle className="text-xl font-semibold tracking-tight">
+                  Resource Utilization
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 py-4">
                 <div className="space-y-3">
@@ -419,21 +468,36 @@ function StudentDashboard({ data }: {data:any}) {
             </Card>
             <Card className="col-span-1 shadow-md hover:shadow-lg transition duration-300">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl font-semibold tracking-tight">Upcoming Deadlines</CardTitle>
+                <CardTitle className="text-xl font-semibold tracking-tight">
+                  Upcoming Deadlines
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5 py-4">
                 <div className="space-y-4">
-                  {data.upcomingDeadlines.map((deadline) => (
-                    <div key={deadline.id} className="flex items-center gap-5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
-                        <BookOpen className="h-6 w-6 text-primary" />
+                  {data.upcomingDeadlines?.map(
+                    (deadline: {
+                      id: string;
+                      title: string;
+                      dueDate: string;
+                    }) => (
+                      <div
+                        key={deadline.id}
+                        className="flex items-center gap-5"
+                      >
+                        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+                          <BookOpen className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-md font-semibold">
+                            {deadline.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(deadline.dueDate).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-md font-semibold">{deadline.title}</p>
-                        <p className="text-sm text-muted-foreground">{new Date(deadline.dueDate).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -450,7 +514,9 @@ function TeacherDashboard({ data }: { data: any }) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Teaching Courses</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Teaching Courses
+            </CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -459,7 +525,9 @@ function TeacherDashboard({ data }: { data: any }) {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -468,16 +536,22 @@ function TeacherDashboard({ data }: { data: any }) {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Classes</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Upcoming Classes
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.upcomingClasses.length}</div>
+            <div className="text-2xl font-bold">
+              {data.upcomingClasses.length}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Assignments
+            </CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -524,7 +598,9 @@ function TeacherDashboard({ data }: { data: any }) {
                   <p className="text-sm font-medium">{session.course.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(session.sessionDate).toLocaleDateString()} at{" "}
-                    {new Date(`1970-01-01T${session.startTime}`).toLocaleTimeString([], {
+                    {new Date(
+                      `1970-01-01T${session.startTime}`
+                    ).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -536,7 +612,7 @@ function TeacherDashboard({ data }: { data: any }) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 function ParentDashboard({ data }: { data: any }) {
@@ -554,15 +630,19 @@ function ParentDashboard({ data }: { data: any }) {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Enrolled Courses</h3>
-                <p className="text-2xl font-bold">{relation.student.studentCourses.length}</p>
+                <p className="text-2xl font-bold">
+                  {relation.student.studentCourses.length}
+                </p>
               </div>
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Average Grade</h3>
                 <p className="text-2xl font-bold">
                   {relation.student.studentExams.length > 0
                     ? (
-                        relation.student.studentExams.reduce((sum: number, exam: any) => sum + (exam.grade || 0), 0) /
-                        relation.student.studentExams.length
+                        relation.student.studentExams.reduce(
+                          (sum: number, exam: any) => sum + (exam.grade || 0),
+                          0
+                        ) / relation.student.studentExams.length
                       ).toFixed(1)
                     : "N/A"}
                 </p>
@@ -572,10 +652,11 @@ function ParentDashboard({ data }: { data: any }) {
                 <p className="text-2xl font-bold">
                   {relation.student.attendanceRecords.length > 0
                     ? `${(
-                        (relation.student.attendanceRecords.filter((record: any) => record.status === "present")
-                          .length /
+                        (relation.student.attendanceRecords.filter(
+                          (record: any) => record.status === "present"
+                        ).length /
                           relation.student.attendanceRecords.length) *
-                          100
+                        100
                       ).toFixed(0)}%`
                     : "N/A"}
                 </p>
@@ -586,12 +667,19 @@ function ParentDashboard({ data }: { data: any }) {
               <h3 className="mb-4 text-sm font-medium">Recent Grades</h3>
               <div className="space-y-2">
                 {relation.student.studentExams.slice(0, 3).map((exam: any) => (
-                  <div key={exam.id} className="flex items-center justify-between rounded-md border p-3">
+                  <div
+                    key={exam.id}
+                    className="flex items-center justify-between rounded-md border p-3"
+                  >
                     <div>
                       <p className="font-medium">{exam.exam.title}</p>
-                      <p className="text-sm text-muted-foreground">{exam.exam.course.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {exam.exam.course.name}
+                      </p>
                     </div>
-                    <div className="text-lg font-bold">{exam.grade !== null ? exam.grade : "Not graded"}</div>
+                    <div className="text-lg font-bold">
+                      {exam.grade !== null ? exam.grade : "Not graded"}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -600,24 +688,31 @@ function ParentDashboard({ data }: { data: any }) {
             <div>
               <h3 className="mb-4 text-sm font-medium">Courses</h3>
               <div className="space-y-2">
-                {relation.student.studentCourses.slice(0, 3).map((enrollment: any) => (
-                  <div key={enrollment.id} className="flex items-center gap-3 rounded-md border p-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
-                      <BookOpen className="h-5 w-5" />
+                {relation.student.studentCourses
+                  .slice(0, 3)
+                  .map((enrollment: any) => (
+                    <div
+                      key={enrollment.id}
+                      className="flex items-center gap-3 rounded-md border p-3"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{enrollment.course.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {enrollment.course.code}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{enrollment.course.name}</p>
-                      <p className="text-sm text-muted-foreground">{enrollment.course.code}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </CardContent>
         </Card>
       ))}
     </div>
-  )
+  );
 }
 
 function AdminDashboard() {
@@ -626,7 +721,9 @@ function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -644,7 +741,9 @@ function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Teachers</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Teachers
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -653,7 +752,9 @@ function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Sessions
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -706,7 +807,7 @@ function AdminDashboard() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 function DashboardSkeleton() {
@@ -747,5 +848,5 @@ function DashboardSkeleton() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
