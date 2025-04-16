@@ -20,6 +20,10 @@ interface StudentDashboardProps {
       dueDate: string;
       course: { name: string };
     }>;
+    user:{
+      firstname: string;
+      lastname: string;
+    };
   };
 }
 

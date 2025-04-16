@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
 import { useToast } from "@/components/ui/use-toast"
 
 interface Message {
@@ -72,21 +70,19 @@ export function MoodAssistant({
     setIsLoading(true)
 
     try {
-      const { text } = await generateText({
-        model: openai.chat("gpt-3.5-turbo"), // Using reliable model
-        prompt: `You are a helpful and motivational AI assistant for a student named ${userName}. 
-        Your goal is to help them with their mood, motivation, and academic stress. 
-        Be empathetic, positive, and provide practical advice. 
-        Previous conversation: ${JSON.stringify(messages.slice(-5))}. 
-        User's message: ${input}`,
-        system:
-          "You are a supportive AI mood assistant for students. Keep responses concise (under 150 words), empathetic, and motivational. Focus on stress management, motivation, and positive mindset. Provide practical advice when appropriate.",
+      const res = await fetch("/api/mood-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userName, input, messages }),
       })
-
+      
+      const data: { text: string; error?: string } = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: text,
+        content: data.text,
         timestamp: new Date(),
       }
 
